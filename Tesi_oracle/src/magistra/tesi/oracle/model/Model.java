@@ -10,8 +10,8 @@ public class Model {
 
 	public static void main(String[] args) {
 		
-//		InsertDAO inserisci = new InsertDAO();
-		InsertProva inserisci = new InsertProva();
+		InsertDAO inserisci = new InsertDAO();
+//		InsertProva inserisci = new InsertProva();
 		
 //		String miaquery = "SELECT Companyid FROM contacts WHERE delivererid IN (SELECT delivererid FROM deliverers WHERE Name=Baker);";
 

@@ -13,36 +13,24 @@ public class InsertProva {
 
 		public String doQuery() {
 			
-			Connection conn = DBConnect.getInstance().getConnection();
+//			Connection conn = DBConnect.getInstance().getConnection();
+			
 			Connection connErr = DBConnect.getInstance().getConnectionErr();
+			
+			Connection connPostgre = DBConnect.getInstance().getConnectionPostgre();
 		
 			int columnsNumber = 0;
 			
-//			TreeMap<Integer, String> queries = new TreeMap<Integer, String>();
-			
-//			String getQuery = "select queryOutputId, queryEseguita from try;";
-			String insertErr = "update try SET testoMessaggioMySql=? WHERE queryOutputId=?;";
+
+			String insertErr = "update try SET testoMessaggioPostgres=? WHERE queryOutputId=?;";
 		
-//			try {
-//				PreparedStatement stQuery = connErr.prepareStatement(getQuery);
-//				ResultSet rsQuery = stQuery.executeQuery();
-//				while (rsQuery.next()) {
-//					queries.put(rsQuery.getInt("queryOutputId"), rsQuery.getString("queryEseguita"));
-//				}
-//			}catch(SQLException e) {
-//				throw new RuntimeException("Error Connection Database try to get the queries");
-//			}	
+
 			
-//			for (int k: queries.keySet()) {
-//				System.out.println(k + " " + queries.get(k));
-			
-			
-			
-				String sql = "";
+				String sql = "select mandate from contacts";
 				
 				ArrayList<Object> className = new ArrayList<Object>() ;
 				try {
-					PreparedStatement st = conn.prepareStatement(sql);
+					PreparedStatement st = connPostgre.prepareStatement(sql);
 					PreparedStatement stErr = connErr.prepareStatement(insertErr);
 
 					ResultSet rs = st.executeQuery();
@@ -70,14 +58,20 @@ public class InsertProva {
 							}
 						}
 					}
-
+					
+					while (rs.next()) {
+						String result= rs.getString(1);
+						System.out.println(result);
+					}
 					stErr.setInt(2, 120);
 					stErr.setString(1, "Query eseguita correttamente su MySQL");
 					stErr.executeUpdate();
+					
 					st.close();
 				} catch(SQLException e) {
 					PreparedStatement stErr;
 					String errorMessage = e.getMessage();
+					e.printStackTrace();
 
 					try {
 						stErr = connErr.prepareStatement(insertErr);
@@ -92,7 +86,7 @@ public class InsertProva {
 				
 //			}
 			try {
-				conn.close();
+				connPostgre.close();
 				connErr.close();
 
 			} catch (SQLException e) {

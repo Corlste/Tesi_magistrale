@@ -13,7 +13,8 @@ public class InsertDAO {
 
 	public String doQuery() {
 		
-		Connection conn = DBConnect.getInstance().getConnection();
+		Connection connMysql = DBConnect.getInstance().getConnectionMysql();
+		Connection connPostgre = DBConnect.getInstance().getConnectionPostgre();
 		Connection connErr = DBConnect.getInstance().getConnectionErr();
 	
 		int columnsNumber = 0;
@@ -21,13 +22,16 @@ public class InsertDAO {
 		TreeMap<Integer, String> queries = new TreeMap<Integer, String>();
 		
 		String getQuery = "select queryOutputId, queryEseguita from try;";
-		String insertErr = "update try SET testoMessaggioMySql=? WHERE queryOutputId=?;";
+		String insertErrMysql = "update try SET testoMessaggioMySql=? WHERE queryOutputId=?;";
+		String insertErrPostgre = "update try SET testoMessaggioPostgres=? WHERE queryOutputId=?;";
 	
 		try {
 			PreparedStatement stQuery = connErr.prepareStatement(getQuery);
 			ResultSet rsQuery = stQuery.executeQuery();
 			while (rsQuery.next()) {
-				queries.put(rsQuery.getInt("queryOutputId"), rsQuery.getString("queryEseguita"));
+//				String q = rsQuery.getString("queryEseguita");
+//				q.replaceAll("\\\", "");
+				queries.put(rsQuery.getInt("queryOutputId"), rsQuery.getString("queryEseguita").replaceAll("\\\\", ""));
 			}
 		}catch(SQLException e) {
 			throw new RuntimeException("Error Connection Database try to get the queries");
@@ -39,12 +43,13 @@ public class InsertDAO {
 			
 			ArrayList<Object> className = new ArrayList<Object>() ;
 			try {
-				PreparedStatement st = conn.prepareStatement(sql);
-				PreparedStatement stErr = connErr.prepareStatement(insertErr);
-
-				ResultSet rs = st.executeQuery();
-				ResultSetMetaData rsmd = rs.getMetaData();
-						
+				PreparedStatement stMysql = connMysql.prepareStatement(sql);
+								
+				PreparedStatement stErrMysql = connErr.prepareStatement(insertErrMysql);
+				
+				ResultSet rsMysql = stMysql.executeQuery();
+				ResultSetMetaData rsmd = rsMysql.getMetaData();
+							
 				columnsNumber = rsmd.getColumnCount();
 						
 				for (int i =0 ; i<columnsNumber; i++) {
@@ -68,20 +73,22 @@ public class InsertDAO {
 					}
 				}
 
-				stErr.setInt(2, k);
-				stErr.setString(1, "Query eseguita correttamente su MySQL");
-				stErr.executeUpdate();
-				st.close();
+				stErrMysql.setInt(2, k);
+				stErrMysql.setString(1, "Query eseguita correttamente su MySQL");
+				stErrMysql.executeUpdate();
+				
+				stMysql.close();
 			} catch(SQLException e) {
-				PreparedStatement stErr;
+				PreparedStatement stErrMysql;
 				String errorMessage = e.getMessage();
+//				e.printStackTrace();
 
 				try {
-					stErr = connErr.prepareStatement(insertErr);
-					stErr.setInt(2, k);
-					stErr.setString(1, errorMessage);
+					stErrMysql = connErr.prepareStatement(insertErrMysql);
+					stErrMysql.setInt(2, k);
+					stErrMysql.setString(1, errorMessage);
 
-					stErr.executeUpdate();
+					stErrMysql.executeUpdate();
 				} catch (SQLException e1) {
 				}
 
@@ -89,13 +96,40 @@ public class InsertDAO {
 			
 		}
 		try {
-			conn.close();
-			connErr.close();
+			connMysql.close();
 
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		for (int k: queries.keySet()) {
+			String sql = queries.get(k);
+			try {
+				PreparedStatement stPostgre = connPostgre.prepareStatement(sql);
+				PreparedStatement stErrPostgre = connErr.prepareStatement(insertErrPostgre);
+				ResultSet rsPostgre = stPostgre.executeQuery();
+				
+				
+				stErrPostgre.setInt(2, k);
+				stErrPostgre.setString(1, "Query eseguita correttamente su Postgre");
+				stErrPostgre.executeUpdate();
+				
+				stPostgre.close();
+			} catch(SQLException e) {
+				PreparedStatement stErrPostgre;
+				String errorMessage = e.getMessage();
+//				e.printStackTrace();
+				try {
+					stErrPostgre = connErr.prepareStatement(insertErrPostgre);
+					stErrPostgre.setInt(2, k);
+					stErrPostgre.setString(1, errorMessage);
+
+					stErrPostgre.executeUpdate();
+				} catch (SQLException e1) {
+				}
+			}
+		}	
 		return ("Query eseguite");
 	}
 }
