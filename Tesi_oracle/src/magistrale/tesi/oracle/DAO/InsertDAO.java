@@ -11,20 +11,10 @@ import java.util.TreeMap;
 
 public class InsertDAO {
 
-	public String doQuery() {
-		
-		Connection connMysql = DBConnect.getInstance().getConnectionMysql();
-		Connection connPostgre = DBConnect.getInstance().getConnectionPostgre();
+	private TreeMap getQueries() {
 		Connection connErr = DBConnect.getInstance().getConnectionErr();
-	
-		int columnsNumber = 0;
-		
 		TreeMap<Integer, String> queries = new TreeMap<Integer, String>();
-		
 		String getQuery = "select queryOutputId, queryEseguita from try;";
-		String insertErrMysql = "update try SET testoMessaggioMySql=? WHERE queryOutputId=?;";
-		String insertErrPostgre = "update try SET testoMessaggioPostgres=? WHERE queryOutputId=?;";
-	
 		try {
 			PreparedStatement stQuery = connErr.prepareStatement(getQuery);
 			ResultSet rsQuery = stQuery.executeQuery();
@@ -35,7 +25,17 @@ public class InsertDAO {
 			}
 		}catch(SQLException e) {
 			throw new RuntimeException("Error Connection Database try to get the queries");
-		}	
+		}
+		return queries;
+	}
+	public String doQuery(TreeMap<Integer, String> queries) {
+		
+		Connection connMysql = DBConnect.getInstance().getConnectionMysql();
+		Connection connErr = DBConnect.getInstance().getConnectionErr();
+	
+		int columnsNumber = 0;	
+		String insertErrMysql = "update try SET testoMessaggioMySql=? WHERE queryOutputId=?;";
+	
 		
 		for (int k: queries.keySet()) {
 			System.out.println(k + " " + queries.get(k));
@@ -97,20 +97,23 @@ public class InsertDAO {
 		}
 		try {
 			connMysql.close();
-
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		
+		}	
+		return ("Query eseguite");
+	}
+	
+	public String doQueryPostgre(TreeMap<Integer, String> queries) {
+		Connection connPostgre = DBConnect.getInstance().getConnectionPostgre();
+		Connection connErr = DBConnect.getInstance().getConnectionErr();
+		String insertErrPostgre = "update try SET testoMessaggioPostgres=? WHERE queryOutputId=?;";
 		for (int k: queries.keySet()) {
 			String sql = queries.get(k);
 			try {
 				PreparedStatement stPostgre = connPostgre.prepareStatement(sql);
 				PreparedStatement stErrPostgre = connErr.prepareStatement(insertErrPostgre);
 				ResultSet rsPostgre = stPostgre.executeQuery();
-				
-				
+								
 				stErrPostgre.setInt(2, k);
 				stErrPostgre.setString(1, "Query eseguita correttamente su Postgre");
 				stErrPostgre.executeUpdate();
@@ -129,7 +132,8 @@ public class InsertDAO {
 				} catch (SQLException e1) {
 				}
 			}
-		}	
-		return ("Query eseguite");
+			
+		}
+	return ("Query eseguite");
 	}
 }
